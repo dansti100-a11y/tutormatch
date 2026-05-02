@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --import-alias \"@/*\" --no-git --eslint --yes)",
       "Bash(cp /Users/danielsti/tutormatch/CLAUDE.md /tmp/CLAUDE.md.bak)",
-      "Bash(cp /tmp/CLAUDE.md.bak /Users/danielsti/tutormatch/CLAUDE.md)"
+      "Bash(cp /tmp/CLAUDE.md.bak /Users/danielsti/tutormatch/CLAUDE.md)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(git -C /Users/danielsti/tutormatch status)",
+      "Bash(git -C /Users/danielsti/tutormatch log --oneline -5)"
     ]
   }
 }
