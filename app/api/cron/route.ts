@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/email/send'
+import { sessionReminderEmailHtml, reviewPromptEmailHtml } from '@/lib/email/templates'
 
-// Called by Vercel Cron every hour.
-// Vercel cron config lives in vercel.json.
+// Called by Vercel Cron every hour. Cron config lives in vercel.json.
 export async function GET(request: Request) {
-  // Lazy-init so missing env var doesn't crash at build time
-  const resend = new Resend(process.env.RESEND_API_KEY)
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,12 +29,25 @@ export async function GET(request: Request) {
     const tutor = Array.isArray(session.tutor) ? session.tutor[0] : session.tutor
     if (!student?.email || !tutor?.email) continue
 
-    await resend.emails.send({
-      from: 'TutorMatch <noreply@tutormatch.app>',
-      to: [student.email, tutor.email],
-      subject: `Reminder: ${session.subject} session tomorrow`,
-      text: `Your ${session.subject} session is scheduled for tomorrow.\nFormat: ${session.format}\n${session.location_or_link ? `Location/Link: ${session.location_or_link}` : ''}`,
-    })
+    const opts = {
+      subject: session.subject,
+      scheduledAt: session.scheduled_at,
+      format: session.format,
+      locationOrLink: session.location_or_link,
+    }
+
+    await Promise.all([
+      sendEmail({
+        to: student.email,
+        subject: `Reminder: ${session.subject} session tomorrow`,
+        html: sessionReminderEmailHtml({ name: student.name ?? 'Student', ...opts }),
+      }),
+      sendEmail({
+        to: tutor.email,
+        subject: `Reminder: ${session.subject} session tomorrow`,
+        html: sessionReminderEmailHtml({ name: tutor.name ?? 'Tutor', ...opts }),
+      }),
+    ])
 
     await supabase.from('sessions').update({ reminder_sent: true }).eq('id', session.id)
   }
@@ -54,11 +65,14 @@ export async function GET(request: Request) {
     const tutor = Array.isArray(session.tutor) ? session.tutor[0] : session.tutor
     if (!student?.email) continue
 
-    await resend.emails.send({
-      from: 'TutorMatch <noreply@tutormatch.app>',
+    await sendEmail({
       to: student.email,
-      subject: `How was your session with ${tutor?.name}?`,
-      text: `We hope your ${session.subject} session went well! Leave a review at tutormatch.app/sessions`,
+      subject: `How was your session with ${tutor?.name ?? 'your tutor'}?`,
+      html: reviewPromptEmailHtml(
+        student.name ?? 'Student',
+        tutor?.name ?? 'your tutor',
+        session.subject,
+      ),
     })
 
     await supabase

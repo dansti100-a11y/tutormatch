@@ -1,14 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { DiscoverModeA } from '@/components/discover/DiscoverModeA'
+import { DiscoverModeB } from '@/components/discover/DiscoverModeB'
+import { computeCompatibilityScore } from '@/lib/utils/scoring'
 import type { TutorCardData } from '@/components/tutor/TutorCard'
+import type { TutorProfile, StudentProfile, AvailabilitySlots } from '@/lib/types/app.types'
 
 export default async function DiscoverPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [tutorsResult, settingsResult] = await Promise.all([
+  const [tutorsResult, settingsResult, studentResult] = await Promise.all([
     supabase
       .from('tutor_profiles')
       .select('user_id, subjects, bio_prompt, scores_json, rating_avg, sessions_count, profiles(id, name, avatar_url)')
@@ -18,11 +21,16 @@ export default async function DiscoverPage() {
       .select('value')
       .eq('key', 'tutor_pool_threshold')
       .single(),
+    supabase
+      .from('student_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single(),
   ])
 
   const rawTutors = tutorsResult.data ?? []
-  // threshold unused until Mode B is activated; kept for the mode check in v2
-  void settingsResult
+  const threshold = Number(settingsResult.data?.value ?? 8)
+  const studentProfile = studentResult.data as StudentProfile | null
 
   const tutors: TutorCardData[] = rawTutors
     .filter(t => t.profiles !== null)
@@ -44,6 +52,8 @@ export default async function DiscoverPage() {
       }
     })
 
+  const useMode = tutors.length >= threshold ? 'B' : 'A'
+
   return (
     <div>
       <div className="mb-6 flex items-end justify-between">
@@ -55,8 +65,31 @@ export default async function DiscoverPage() {
               : `${tutors.length} tutor${tutors.length === 1 ? '' : 's'} available`}
           </p>
         </div>
+        {useMode === 'B' && (
+          <span className="text-xs rounded-full bg-indigo-50 px-3 py-1 text-indigo-600 font-medium">
+            Matched for you
+          </span>
+        )}
       </div>
-      <DiscoverModeA tutors={tutors} />
+
+      {useMode === 'B' && studentProfile ? (
+        <DiscoverModeB
+          tutors={tutors.map(t => ({
+            ...t,
+            compatibilityScore: computeCompatibilityScore(
+              {
+                user_id: t.userId,
+                subjects: t.subjects,
+                availability: {} as AvailabilitySlots,
+                rating_avg: t.ratingAvg,
+              } as unknown as TutorProfile,
+              studentProfile,
+            ),
+          })).sort((a, b) => b.compatibilityScore - a.compatibilityScore)}
+        />
+      ) : (
+        <DiscoverModeA tutors={tutors} />
+      )}
     </div>
   )
 }

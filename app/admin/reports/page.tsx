@@ -1,8 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { relativeTime } from '@/lib/utils/format'
+import { ResolveButton } from './ResolveButton'
 
 export default async function ReportsPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data: reports } = await supabase
     .from('reports')
     .select('id, reason, status, created_at, reporter:reporter_id(name), reported:reported_id(name)')
@@ -34,6 +35,7 @@ export default async function ReportsPage() {
                       {r.status}
                     </span>
                     <span className="text-xs text-gray-400">{relativeTime(r.created_at)}</span>
+                    {r.status === 'open' && <ResolveButton reportId={r.id} />}
                   </div>
                 </div>
               </div>

@@ -7,7 +7,9 @@
       "Bash(npx tsc *)",
       "Bash(npm run *)",
       "Bash(git -C /Users/danielsti/tutormatch status)",
-      "Bash(git -C /Users/danielsti/tutormatch log --oneline -5)"
+      "Bash(git -C /Users/danielsti/tutormatch log --oneline -5)",
+      "Bash(npx next *)",
+      "Bash(git -C /Users/danielsti/tutormatch add -A)"
     ]
   }
 }
