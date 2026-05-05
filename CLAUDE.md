@@ -115,9 +115,9 @@ const mode: DiscoverMode = count >= threshold ? 'B' : 'A'
 | 8 | Sessions pages (upcoming/past for both roles) ✅ |
 | 9 | Messaging (thread list, thread view, Realtime) ✅ |
 | 10 | Reviews (post-session form, display on profile) ✅ |
-| 11 | Admin dashboard (users, sessions, reports, settings) |
-| 12 | Email notifications (Resend) + Vercel cron |
-| 13 | Discover feed Mode B scaffold |
+| 11 | Admin dashboard (users, sessions, reports, settings) ✅ |
+| 12 | Email notifications (Resend) + Vercel cron ✅ |
+| 13 | Discover feed Mode B scaffold ✅ |
 
 ## Session Progress (May 3, 2026)
 
